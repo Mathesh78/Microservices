@@ -20,29 +20,37 @@ public class QuizService {
     @Autowired
     QuizInterface quizInterface;
 
+    @Autowired
+    QuizEventPublisher quizEventPublisher;
 
     public ResponseEntity<String> createQuiz(String category, int numQ, String title) {
+        List<Integer> questions =
+                quizInterface.getQuestionsForQuiz(category, numQ).getBody();
 
-        List<Integer> questions = quizInterface.getQuestionsForQuiz(category, numQ).getBody();
         Quiz quiz = new Quiz();
         quiz.setTitle(title);
         quiz.setQuestionIds(questions);
         quizDao.save(quiz);
 
         return new ResponseEntity<>("Success", HttpStatus.CREATED);
-
     }
 
     public ResponseEntity<List<QuestionWrapper>> getQuizQuestions(Integer id) {
         Quiz quiz = quizDao.findById(id).get();
         List<Integer> questionIds = quiz.getQuestionIds();
-        ResponseEntity<List<QuestionWrapper>> questions = quizInterface.getQuestionsFromId(questionIds);
-        return questions;
-
+        return quizInterface.getQuestionsFromId(questionIds);
     }
 
     public ResponseEntity<Integer> calculateResult(Integer id, List<Response> responses) {
-        ResponseEntity<Integer> score = quizInterface.getScore(responses);
-        return score;
+        // Existing synchronous Feign call
+        ResponseEntity<Integer> scoreResponse = quizInterface.getScore(responses);
+        Integer score = scoreResponse.getBody();
+
+        // New asynchronous RabbitMQ event
+        if (score != null) {
+            quizEventPublisher.publishQuizSubmitted(id, score);
+        }
+
+        return scoreResponse;
     }
 }
