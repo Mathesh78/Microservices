@@ -16,33 +16,65 @@ import java.nio.charset.StandardCharsets;
 @Configuration
 public class SecurityConfig {
 
+//    @Bean
+//    public SecurityFilterChain securityFilterChain(HttpSecurity http)
+//            throws Exception {
+//
+//        http
+//                .csrf(csrf -> csrf.disable())
+//
+//                .authorizeHttpRequests(auth -> auth
+//
+//                        // Auth service does NOT require JWT
+//                        .requestMatchers("/auth-service/**").permitAll()
+//
+//                        // Everything else requires JWT
+//                        .anyRequest().authenticated()
+//                )
+//
+//                .oauth2ResourceServer(oauth ->
+//                        oauth.jwt(Customizer.withDefaults())
+//                );
+//
+//        return http.build();
+//    }
+
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http)
+            throws Exception {
+
         http
                 .csrf(csrf -> csrf.disable())
+
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(
-                                "/auth-service/auth/register",
-                                "/auth-service/auth/login"
-                        ).permitAll()
+                        // Register and login do not need JWT
+                        .requestMatchers("/auth-service/**").permitAll()
+
+                        // Question and Quiz APIs need JWT
                         .anyRequest().authenticated()
                 )
-                .oauth2ResourceServer(oauth -> oauth.jwt(Customizer.withDefaults()));
+
+                .oauth2ResourceServer(oauth ->
+                        oauth.jwt(Customizer.withDefaults())
+                );
 
         return http.build();
     }
-
     @Bean
-    public JwtDecoder jwtDecoder(@Value("${jwt.secret}") String secret) {
-        byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);
+    public JwtDecoder jwtDecoder(
+            @Value("${jwt.secret}") String secret) {
 
-        if (keyBytes.length < 32) {
-            throw new IllegalStateException(
-                    "JWT_SECRET must contain at least 32 bytes for HS256"
-            );
-        }
+        byte[] keyBytes =
+                secret.getBytes(StandardCharsets.UTF_8);
 
-        SecretKey key = new SecretKeySpec(keyBytes, "HmacSHA256");
-        return NimbusJwtDecoder.withSecretKey(key).build();
+        SecretKey key =
+                new SecretKeySpec(
+                        keyBytes,
+                        "HmacSHA256"
+                );
+
+        return NimbusJwtDecoder
+                .withSecretKey(key)
+                .build();
     }
 }
