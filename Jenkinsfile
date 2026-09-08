@@ -51,10 +51,10 @@ pipeline {
             }
         }
 
-        stage('Build Quiz Service') {
+        stage('Build & Test Quiz Service') {
             steps {
                 sh '''
-                    mvn -f quiz-service/quiz-service/pom.xml clean package -DskipTests
+                    mvn -f quiz-service/quiz-service/pom.xml clean verify
                 '''
             }
         }
