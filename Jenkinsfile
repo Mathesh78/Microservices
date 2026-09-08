@@ -3,21 +3,14 @@ pipeline {
     agent any
 
     triggers {
-            pollSCM('H/2 * * * *')
-        }
+        pollSCM('H/2 * * * *')
+    }
 
     environment {
-        RABBITMQ_USER = 'quizuser'
+        EC2_HOST = '13.53.197.213'
     }
 
     stages {
-
-        stage('Checkout') {
-            steps {
-                echo 'Checking out source code...'
-                checkout scm
-            }
-        }
 
         stage('Build Service Registry') {
             steps {
@@ -67,42 +60,41 @@ pipeline {
             }
         }
 
-        stage('Deploy') {
+        stage('Deploy to EC2') {
 
             steps {
 
                 withCredentials([
-
-                    string(
-                        credentialsId: 'mysql-db-password',
-                        variable: 'DB_PASSWORD'
-                    ),
-
-                    string(
-                        credentialsId: 'jwt-secret',
-                        variable: 'JWT_SECRET'
-                    ),
-
-                    string(
-                        credentialsId: 'rabbitmq-password',
-                        variable: 'RABBITMQ_PASSWORD'
+                    sshUserPrivateKey(
+                        credentialsId: 'ec2-ssh-key1',
+                        keyFileVariable: 'EC2_KEY',
+                        usernameVariable: 'EC2_USER'
                     )
-
                 ]) {
 
                     sh '''
-                        docker compose -p microservices up -d --build
+                        mkdir -p ~/.ssh
+                        chmod 700 ~/.ssh
+
+                        ssh \
+                            -o StrictHostKeyChecking=accept-new \
+                            -i "$EC2_KEY" \
+                            "$EC2_USER@$EC2_HOST" '
+                                set -e
+
+                                cd ~/Microservices
+
+                                echo "Pulling latest code from GitHub..."
+                                git pull --ff-only origin main
+
+                                echo "Building and deploying containers..."
+                                docker compose up -d --build
+
+                                echo "Current containers:"
+                                docker compose ps
+                            '
                     '''
-
                 }
-            }
-        }
-
-        stage('Check Containers') {
-            steps {
-                sh '''
-                    docker compose -p microservices ps
-                '''
             }
         }
     }
@@ -110,7 +102,7 @@ pipeline {
     post {
 
         success {
-            echo 'Microservices deployed successfully!'
+            echo 'Microservices deployed successfully to AWS EC2!'
         }
 
         failure {
