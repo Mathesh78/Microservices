@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: question-service
+  namespace: quiz-app
+
+spec:
+  replicas: 2
+
+  selector:
+    matchLabels:
+      app: question-service
+
+  template:
+    metadata:
+      labels:
+        app: question-service
+
+    spec:
+      containers:
+        - name: question-service
+          image: question-service:k8s
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - containerPort: 8080
+
+          env:
+            - name: DB_HOST
+              value: question-db
+
+            - name: DB_PORT
+              value: "3306"
+
+            - name: DB_USERNAME
+              value: root
+
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: microservices-secrets
+                  key: db-password
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: question-service
+  namespace: quiz-app
+
+spec:
+  selector:
+    app: question-service
+
+  ports:
+    - port: 8080
+      targetPort: 8080
+
+  type: ClusterIP

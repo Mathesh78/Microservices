@@ -1,0 +1,68 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: question-db
+  namespace: quiz-app
+
+spec:
+  selector:
+    app: question-db
+
+  ports:
+    - port: 3306
+      targetPort: 3306
+
+---
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: question-db
+  namespace: quiz-app
+
+spec:
+  serviceName: question-db
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: question-db
+
+  template:
+    metadata:
+      labels:
+        app: question-db
+
+    spec:
+      containers:
+        - name: question-db
+          image: mysql:8.0
+
+          ports:
+            - containerPort: 3306
+
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: microservices-secrets
+                  key: db-password
+
+            - name: MYSQL_DATABASE
+              value: questiondb
+
+          volumeMounts:
+            - name: question-db-storage
+              mountPath: /var/lib/mysql
+
+  volumeClaimTemplates:
+    - metadata:
+        name: question-db-storage
+
+      spec:
+        accessModes:
+          - ReadWriteOnce
+
+        resources:
+          requests:
+            storage: 2Gi

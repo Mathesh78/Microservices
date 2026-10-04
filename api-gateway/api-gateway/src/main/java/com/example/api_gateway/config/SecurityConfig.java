@@ -16,29 +16,6 @@ import java.nio.charset.StandardCharsets;
 @Configuration
 public class SecurityConfig {
 
-//    @Bean
-//    public SecurityFilterChain securityFilterChain(HttpSecurity http)
-//            throws Exception {
-//
-//        http
-//                .csrf(csrf -> csrf.disable())
-//
-//                .authorizeHttpRequests(auth -> auth
-//
-//                        // Auth service does NOT require JWT
-//                        .requestMatchers("/auth-service/**").permitAll()
-//
-//                        // Everything else requires JWT
-//                        .anyRequest().authenticated()
-//                )
-//
-//                .oauth2ResourceServer(oauth ->
-//                        oauth.jwt(Customizer.withDefaults())
-//                );
-//
-//        return http.build();
-//    }
-
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http)
             throws Exception {
@@ -54,12 +31,14 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
 
-                .oauth2ResourceServer(oauth ->
+                .oauth2ResourceServer(oauth ->  //configure the application as an OAuth2 Resource Server that validates incoming JSON Web Tokens (JWTs)
+                        //accepts and validates access tokens (typically sent as Bearer tokens in the Authorization header)
                         oauth.jwt(Customizer.withDefaults())
                 );
 
         return http.build();
     }
+
     @Bean
     public JwtDecoder jwtDecoder(
             @Value("${jwt.secret}") String secret) {

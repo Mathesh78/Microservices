@@ -10,8 +10,13 @@ public class RabbitMQConfig {
     public static final String QUEUE = "quiz.submitted.queue";
     public static final String ROUTING_KEY = "quiz.submitted";
 
+
+//    EXCHANGE = the router
+//    QUEUE = where the message waits
+//    ROUTING_KEY = the label/rule used to decide where the message should go
+
     @Bean
-    public TopicExchange quizExchange() {
+    public TopicExchange quizExchange() { //TopicExchange is a type of RabbitMQ exchange that routes messages based on a routing key pattern.
         return new TopicExchange(EXCHANGE);
     }
 
