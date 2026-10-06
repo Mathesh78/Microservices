@@ -7,8 +7,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@FeignClient("QUESTION-SERVICE")
-public interface QuizInterface {
+@FeignClient(
+        name = "question-service",
+        url = "${question.service.url}"
+)public interface QuizInterface {
 
     @GetMapping("question/generate")
     List<Integer> getQuestionsForQuiz(
