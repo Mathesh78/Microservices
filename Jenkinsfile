@@ -240,7 +240,7 @@ pipeline {
             steps {
                 withCredentials([
                     string(
-                        credentialsId: 'kubernetes-token',
+                        credentialsId: 'kubernetes-token-v2',
                         variable: 'KUBE_TOKEN'
                     )
                 ]) {
