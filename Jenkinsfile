@@ -236,7 +236,36 @@ pipeline {
                 }
             }
         }
-        stage('Test Kubernetes Connection') {
+        stage('Deploy to Kubernetes') {
+            steps {
+                withCredentials([
+                    file(
+                        credentialsId: 'kubernetes-token-file',
+                        variable: 'KUBE_TOKEN_FILE'
+                    ),
+                    usernamePassword(
+                        credentialsId: 'dockerhub-credentials',
+                        usernameVariable: 'DOCKERHUB_USERNAME',
+                        passwordVariable: 'DOCKERHUB_PASSWORD'
+                    )
+                ]) {
+                    sh '''
+                        CLEAN_TOKEN=$(tr -d '\\r\\n' < "$KUBE_TOKEN_FILE")
+
+                        kubectl --kubeconfig=/dev/null --server=https://host.docker.internal:63442 --token="$CLEAN_TOKEN" --insecure-skip-tls-verify=true set image deployment/api-gateway api-gateway=$DOCKERHUB_USERNAME/api-gateway:$IMAGE_TAG -n quiz-app
+
+                        kubectl --kubeconfig=/dev/null --server=https://host.docker.internal:63442 --token="$CLEAN_TOKEN" --insecure-skip-tls-verify=true set image deployment/auth-service auth-service=$DOCKERHUB_USERNAME/auth-service:$IMAGE_TAG -n quiz-app
+
+                        kubectl --kubeconfig=/dev/null --server=https://host.docker.internal:63442 --token="$CLEAN_TOKEN" --insecure-skip-tls-verify=true set image deployment/question-service question-service=$DOCKERHUB_USERNAME/question-service:$IMAGE_TAG -n quiz-app
+
+                        kubectl --kubeconfig=/dev/null --server=https://host.docker.internal:63442 --token="$CLEAN_TOKEN" --insecure-skip-tls-verify=true set image deployment/quiz-service quiz-service=$DOCKERHUB_USERNAME/quiz-service:$IMAGE_TAG -n quiz-app
+
+                        kubectl --kubeconfig=/dev/null --server=https://host.docker.internal:63442 --token="$CLEAN_TOKEN" --insecure-skip-tls-verify=true set image deployment/notification-service notification-service=$DOCKERHUB_USERNAME/notification-service:$IMAGE_TAG -n quiz-app
+                    '''
+                }
+            }
+        }
+        stage('Verify Kubernetes Deployment') {
             steps {
                 withCredentials([
                     file(
@@ -247,7 +276,11 @@ pipeline {
                     sh '''
                         CLEAN_TOKEN=$(tr -d '\\r\\n' < "$KUBE_TOKEN_FILE")
 
-                        kubectl --kubeconfig=/dev/null --server=https://host.docker.internal:63442 --token="$CLEAN_TOKEN" --insecure-skip-tls-verify=true get deployments -n quiz-app
+                        kubectl --kubeconfig=/dev/null --server=https://host.docker.internal:63442 --token="$CLEAN_TOKEN" --insecure-skip-tls-verify=true rollout status deployment/api-gateway -n quiz-app
+                        kubectl --kubeconfig=/dev/null --server=https://host.docker.internal:63442 --token="$CLEAN_TOKEN" --insecure-skip-tls-verify=true rollout status deployment/auth-service -n quiz-app
+                        kubectl --kubeconfig=/dev/null --server=https://host.docker.internal:63442 --token="$CLEAN_TOKEN" --insecure-skip-tls-verify=true rollout status deployment/question-service -n quiz-app
+                        kubectl --kubeconfig=/dev/null --server=https://host.docker.internal:63442 --token="$CLEAN_TOKEN" --insecure-skip-tls-verify=true rollout status deployment/quiz-service -n quiz-app
+                        kubectl --kubeconfig=/dev/null --server=https://host.docker.internal:63442 --token="$CLEAN_TOKEN" --insecure-skip-tls-verify=true rollout status deployment/notification-service -n quiz-app
                     '''
                 }
             }
