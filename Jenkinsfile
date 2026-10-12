@@ -245,7 +245,9 @@ pipeline {
                     )
                 ]) {
                     sh '''
-                        kubectl --kubeconfig=/dev/null --server=https://host.docker.internal:63442 --token="$KUBE_TOKEN" --insecure-skip-tls-verify=true get deployments -n quiz-app
+                        CLEAN_TOKEN=$(printf '%s' "$KUBE_TOKEN" | tr -d '\\r\\n')
+
+                        kubectl --kubeconfig=/dev/null --server=https://host.docker.internal:63442 --token="$CLEAN_TOKEN" --insecure-skip-tls-verify=true get deployments -n quiz-app
                     '''
                 }
             }
