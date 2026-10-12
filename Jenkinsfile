@@ -239,13 +239,13 @@ pipeline {
         stage('Test Kubernetes Connection') {
             steps {
                 withCredentials([
-                    string(
-                        credentialsId: 'kubernetes-token-v2',
-                        variable: 'KUBE_TOKEN'
+                    file(
+                        credentialsId: 'kubernetes-token-file',
+                        variable: 'KUBE_TOKEN_FILE'
                     )
                 ]) {
                     sh '''
-                        CLEAN_TOKEN=$(printf '%s' "$KUBE_TOKEN" | tr -d '\\r\\n')
+                        CLEAN_TOKEN=$(tr -d '\\r\\n' < "$KUBE_TOKEN_FILE")
 
                         kubectl --kubeconfig=/dev/null --server=https://host.docker.internal:63442 --token="$CLEAN_TOKEN" --insecure-skip-tls-verify=true get deployments -n quiz-app
                     '''
